@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="author" content="Olivier BOES">
+        <title>Chain Builder</title>
+        <style>
+            body {
+                font-family: Monospace;
+                background-color: #f0f0f0;
+                margin: 0px;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+    <body>
+    <script src="./Three.js"></script>
+    <script src="./TrackballControls.js"></script>
+    <script src="./Chain.js"></script>
+    <script type="text/javascript">
+
+// The following code is commented in FRENCH. Sorry about that, don't have the time to translate it right now...
+
+// En tout premier je met le code "intéressant", c'est à dire les implémentations des
+// algorithmes décrits dans la documentation. Le code plus spécifique à cette application
+// (i.e. le code gérant la 3D) est rassemblé un peu plus bas.
+
+
+// calcul de la distance entre deux segments
+function segdis( a0, a1, b0, b1 ) {
+
+    // on utilise u,v,w ce sera plus simple
+    var u = new THREE.Vector3().subVectors( a1, a0 );
+    var v = new THREE.Vector3().subVectors( b0, b1 );
+    var w = new THREE.Vector3().subVectors( b0, a0 );
+
+    // calcul des produits scalaires
+    var uu = u.dot( u );
+    var uv = u.dot( v );
+    var uw = u.dot( w );
+    var vv = v.dot( v );
+    var vw = v.dot( w );
+
+    // calcul du déterminant
+    var det = uu*vv - uv*uv;
+
+    var x, y;
+
+    // pour comprendre tout ce bordel, voir la documentation
+
+    if ( det < 0.001 ) {
+        x = 0;
+        y = vw / vv;
+    }
+    else {
+        x = (uw*vv - uv*vw) / det;
+        y = (uu*vw - uw*uv) / det;
+
+        if ( x < 0 ) {
+            x = 0;
+            y = vw / vv;
+        }
+        else if ( x > 1 ) {
+            x = 1;
+            y = (vw - uv) / vv;
+        }
+    }
+
+    if ( y < 0 ) {
+        y = 0;
+        if ( uw < 0 ) x = 0;
+        else if ( uw > uu ) x = 1;
+        else x = uw / uu;
+    }
+    else if ( y > 1 ) {
+        y = 1;
+        if ( uw - uv < 0 ) x = 0;
+        else if ( uw - uv > uu) x = 1;
+        else x = ( uw - uv ) / uu;
+    }
+
+    var a,b;
+    a = new THREE.Vector3().copy(u);
+    b = new THREE.Vector3().copy(v);
+    a.multiplyScalar(x);
+    b.multiplyScalar(-y);
+    a.add(a0);
+    b.add(b0);
+
+    return a.distanceTo(b);
+
+}
+
+
+// détection des collisions
+function collisions(p) {
+
+    var col = [];
+
+    for (var i=0 ; i<p.length - 1 ; i++) {
+
+        if ( col[i] === undefined ) col[i] = false;
+
+        for (var j=i+2 ; j<p.length - 1 ; j++) {
+
+            if ( segdis(p[i],p[i+1],p[j],p[j+1]) < 1 ) {
+
+                col[i] = true;
+                col[j] = true;
+            }
+        }
+    }
+    return col;
+}
+
+
+// à partir de maintenant, tout le reste du code, c'est pour gérer la 3D
+// une connaissance de base de l'utilisation de Three.js est préférable
+
+
+
+
+var renderer, camera, controls, scene;
+
+var infotop, infobottom;
+
+var chain;
+
+// initialisation du framework WebGL, de la caméra, de l'éclairage, etc
+// c'est pas très bien commenté, mais rien de trop obscur n'est utilisé,
+// le mieux serait de se référer à un des nombreux tutoriels Three.js disponibles 
+function init() {
+
+    // on crée un conteneur (balise div) pour l'animation
+    var container = document.createElement( "div" );
+    document.body.appendChild( container );
+
+    // on crée une zone où du texte pourra être affiché
+    infotop = document.createElement( 'div' );
+    infotop.style.position = "absolute";
+    infotop.style.top = "10px";
+    infotop.style.width = "100%";
+    infotop.style.textAlign = "center";
+    infotop.style.color = "#ffffff";
+    container.appendChild( infotop );
+
+    // on crée une zone où du texte pourra être affiché
+    infobottom = document.createElement( 'div' );
+    infobottom.style.position = "absolute";
+    infobottom.style.bottom = "10px";
+    infobottom.style.width = "100%";
+    infobottom.style.textAlign = "center";
+    infobottom.style.color = "#ffffff";
+    container.appendChild( infobottom );
+
+    renderer = new THREE.WebGLRenderer( { clearAlpha: 1, antialias: true } );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    container.appendChild( renderer.domElement );
+
+    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 1000 );
+    camera.position.set( 100, 1, 2 );
+    camera.up.set( 0, 0, 1 );
+
+    controls = new THREE.TrackballControls( camera );
+
+    scene = new THREE.Scene();
+
+    // pour la lumière, j'ai choisi une source de lumière venant du plafond,
+    // et une source de lumière émanant de la caméra (donc du point de vue de l'utilisateur)
+
+    var ceilingLight = new THREE.SpotLight( 0xffffff );
+    ceilingLight.position.set( 0, 0, 40 );
+    scene.add( ceilingLight );
+
+    var cameraLight = new THREE.DirectionalLight( 0xffffff );
+    cameraLight.position = camera.position;
+    scene.add( cameraLight );
+
+    chain = new Chain();
+    scene.add( chain );
+
+    // pour pas que l'affichage déconne après un redimensionnement de la fenêtre
+    window.addEventListener( "resize", function() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    } );
+
+    document.addEventListener( "mousedown", mousedown );
+    window.addEventListener( "keydown", keydown );
+}
+
+var param = [];
+var undo = "";
+
+var ichain = 0;
+var iparam = 2;
+
+// fonction appelée à chaque fois que la chaîne est manipulée
+function render() {
+
+    // met à jour la chaîne à partir des paramètres
+    var p = params2points( param );
+    chain.update( p );
+
+    // couleur normale pour chaque sommet
+    for ( var i = 0 ; i <= chain.size ; i++ ) chain.spheres[ i ].material.emissive.setHex( 0x000000 );
+
+    // détection des collisions
+    var col = collisions( p );
+
+    // couleur différente pour chaque segment en collision
+    for ( var i = 0 ; i < chain.size ; i++ ) {
+
+        if ( col[i] ) chain.cylinders[ i ].material.emissive.setHex( 0xffff00 );
+        else chain.cylinders[ i ].material.emissive.setHex( 0x000000 );
+    }
+
+    // couleur différente pour le sommet sélectionné
+    chain.spheres[ ichain ].material.emissive.setHex( 0x0000ff );
+
+    if ( col.some( function(b) { return b; } ) ) eval(undo);
+
+
+    infotop.innerHTML = "";
+    infobottom.innerHTML = "";
+
+    if ( ichain < chain.size ) {
+
+        param[ ichain ][ 1 ] = (param[ ichain ][ 1 ] + 360) % 360;
+        param[ ichain ][ 2 ] = (param[ ichain ][ 2 ] + 360) % 360;
+
+        infotop.innerHTML += "parameters : ";
+        infotop.innerHTML += " &#8467; = " + param[ ichain ][ 0 ] + ",";
+        infotop.innerHTML += " &theta; = " + param[ ichain ][ 1 ] + ",";
+        infotop.innerHTML += " &delta; = " + param[ ichain ][ 2 ] + "<br><br>";
+
+        infobottom.innerHTML += "SPACE/BACKSPACE to change &#8467;<br>";
+        infobottom.innerHTML += "LEFT/RIGHT to change &theta;<br>";
+        infobottom.innerHTML += "UP/DOWN to change &delta;<br>";
+    }
+    else {
+        infobottom.innerHTML += "SPACE/BACKSPACE to add/remove a segment<br>";
+    }
+
+    infobottom.innerHTML += "node " + ichain + " selected (click another node to select it)<br>";
+}
+
+// fonction appelée en boucle pour l'animation, la seule chose
+// dont elle s'occupe est le positionnement de la caméra
+function animate() {
+
+    requestAnimationFrame( animate );
+    controls.update();
+    renderer.render( scene, camera );
+};
+
+// gestion du clavier
+function keydown( event ) {
+
+    // dans cette fonction : la chaîne est modifiée selon la touche pressée,
+    // une commande annulant cette modification est mise dans la variable undo
+    // (afin de pouvoir annuler cette modification en cas de collision),
+    // et la fonction render() est appelée pour mettre la chaîne à jour
+
+    switch ( event.keyCode ) {
+
+        case 32:    // espace
+            if ( ichain < chain.size ) {
+                undo = "param["+ichain+"][0]-=1;";
+                param[ ichain ][ 0 ]+=1;
+            }
+            else {
+                undo = "param.pop(); ichain--;";
+                param.push( [ 10, 60, 15 ] );
+                ichain++;
+            }
+            break;
+
+        case 8:    // retour
+            if ( ichain < chain.size ) {
+                if ( param[ ichain ][ 0 ] > 1 ) {
+                    undo = "param["+ichain+"][0]+=1;";
+                    param[ ichain ][ 0 ]-=1;
+                }
+            }
+            else if ( chain.size > 0 ) {
+                param.pop();
+                ichain--;
+            }
+            break;
+
+        case 37:    // gauche
+            if ( ichain < chain.size ) {
+                undo = "param["+ichain+"][1]-=5;";
+                param[ ichain ][ 1 ]+=5;
+            }
+            break;
+
+        case 39:    // droite
+            if ( ichain < chain.size ) {
+                undo = "param["+ichain+"][1]+=5;";
+                param[ ichain ][ 1 ]-=5;
+            }
+            break;
+
+        case 38:    // haut
+            if ( ichain < chain.size ) {
+                undo = "param["+ichain+"][2]-=5;";
+                param[ ichain ][ 2 ]+=5;
+            }
+            break;
+
+        case 40:    // bas
+            if ( ichain < chain.size ) {
+                undo = "param["+ichain+"][2]+=5;";
+                param[ ichain ][ 2 ]-=5;
+            }
+            break;
+    }
+
+    render();
+}
+
+// gestion de la souris
+function mousedown( event ) {
+
+    var x =  2 * ( event.clientX / window.innerWidth ) - 1;
+    var y = -2 * ( event.clientY / window.innerHeight ) + 1;
+
+    // tout ce bordel sert à déterminer, à partir des coordonnées xy de la souris,
+    // sur quel objet l'utilisateur a cliqué 
+    var vector = new THREE.Vector3( x, y, 1 );
+    var projector = new THREE.Projector();
+    projector.unprojectVector( vector, camera );
+    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+    var intersects = raycaster.intersectObjects( chain.spheres, true );
+
+    if ( intersects[0] !== undefined ) {
+
+        ichain = chain.spheres.indexOf( intersects[0].object );
+        render();
+    }
+}
+
+// on peut finalement lancer tout ça !
+init();
+render();
+animate();
+
+    </script>
+</body>
+</html>

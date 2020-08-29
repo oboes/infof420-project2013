@@ -1,0 +1,60 @@
+<!DOCTYPE HTML><html><head><meta charset="UTF-8"><meta name="author" content="Olivier BOES"><title>Flat-State Connectivity</title><link rel="stylesheet" type="text/css" href="./style.css"><script src="./shCore.js"></script><script src="./shBrushJScript.js"></script><link href="./shCore.css" rel="stylesheet" type="text/css"><link href="./shThemeDefault.css" rel="stylesheet" type="text/css"><script> SyntaxHighlighter.all(); </script><script src="MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script></head><body>
+<div class="back">&ndash; <a href="./index.html">back to contents</a> &ndash;</div>
+<div id="prev"><a href="./page3.html">&larr;</a></div>
+<div id="wrapper">
+<h1>4. Flat-State Connectivity</h1>
+
+<p id="subtitle">&mdash; for the impatient : <a href="./app4.html">a canonicalization algorithm</a> &mdash;</p>
+
+<p>
+All polygonal chains considered in this page are <em>fixed-angle</em> chains : their turn angles are fixed and can't be changed.
+The only way to move chains of this kind is via dihedral motion, that is motions where only the dihedral angles vary.
+A fixed-angle chain is said to be <em>acute</em> when \( \theta_i &gt; 90^\circ \) for every \( i \), otherwise it is <em>nonacute</em>.
+A chain is <em>monotone</em> in some direction if every plane perpendicular to this direction cut the chain in at most one point.
+</p>
+
+<p>
+A chain is said to be in a <em>flat-state</em> when all its segments are on a common plane.
+If it's possible to move the chain from any one of its flat-state to any other, using a self-avoiding dihedral motion,
+we say that the chain is <em>flat-state connected</em>.
+It is still unknown if every polygonal chain is flat-state connected.
+But it seems (see <a href="http://www.cs.uiuc.edu/~jeffe/pubs/flat2flat.html">this paper</a> and 
+<a href="http://courses.csail.mit.edu/6.849/fall10/lectures/L18.html">this video lecture</a>)
+that the following cases are flat-state connected :
+</p>
+
+<ul>
+    <li>chains with a monotone state</li>
+    <li>nonacute chains</li>
+    <li>chains with equal acute angles</li>
+    <li>chains with unit edges length and with \( \theta_i \in [90^\circ, 120^\circ] \)</li>
+</ul>
+
+<p>
+Also, <a href="http://erikdemaine.org/papers/ProteinMachine_Algorithmica/">this paper</a> exposes a link between flat-state connected chains
+and chains that are in some way "producible" inside of a cone modeling a ribosome.
+</p>
+
+<p>
+One common way to prove flat-state connectivity is to prove that there is an algorithm that can move
+the chain from any one of its flat-state to some <em>canonical</em> configuration (using a self-avoiding dihedral motion).
+If it's the case, then the chain is flat-state connected, because we can move it from the flat-state to the canonical configuration
+and then back to another flat-state by reversing the canonicalization movements.
+It is an example of an algorithm used to prove a theorem : if the algorithm works for every chain satisfying some conditions,
+then every one these chains is flat-state connected.
+</p>
+
+<p>
+For the final page of this website, I wanted to implement something explaining one of the algorithms of the previously cited papers.
+What I did is <a href="./app4.html">this</a>, it is an application which lets you draw a chain and then apply the canonicalization
+algorithm for nonacute chains <a href="http://www.cs.uiuc.edu/~jeffe/pubs/flat2flat.html">described in section 3 of this paper</a>.
+But unfortunately I lacked time, so this application is somewhat buggy and doesn't work every time, and I still have to investigate why.
+It is nonetheless helpful to understand the algorithm, I advise the reader to try it with
+<a href="http://courses.csail.mit.edu/6.849/fall10/lectures/L18_images/10.jpg">this chain</a> and see the result (I know it works for this one !).
+</p>
+
+
+
+
+</div><div class="back">&ndash; <a href="./index.html">back to contents</a> &ndash;</div>
+</body></html>

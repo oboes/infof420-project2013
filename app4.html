@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="author" content="Olivier BOES">
+        <title>Canonicalization</title>
+        <style>
+            body {
+                font-family: Monospace;
+                background-color: #f0f0f0;
+                margin: 0px;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+    <body>
+    <script src="./Three.js"></script>
+    <script src="./TrackballControls.js"></script>
+    <script src="./Chain.js"></script>
+    <script type="text/javascript">
+
+
+var renderer, camera, controls, scene;
+
+var infotop, infobottom;
+
+var chain;
+
+function init() {
+
+    var container = document.createElement( "div" );
+    document.body.appendChild( container );
+
+    infotop = document.createElement( 'div' );
+    infotop.style.position = "absolute";
+    infotop.style.top = "10px";
+    infotop.style.width = "100%";
+    infotop.style.textAlign = "center";
+    infotop.style.color = "#ffffff";
+    container.appendChild( infotop );
+
+    renderer = new THREE.WebGLRenderer( { clearAlpha: 1, antialias: true } );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    container.appendChild( renderer.domElement );
+
+    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
+    camera.position.set( 0, 0, 100 );
+
+    scene = new THREE.Scene();
+
+    var ceilingLight = new THREE.SpotLight( 0xffffff );
+    ceilingLight.position.set( 0, 0, 40 );
+    scene.add( ceilingLight );
+
+    var cameraLight = new THREE.DirectionalLight( 0xffffff );
+    cameraLight.position = camera.position;
+    scene.add( cameraLight );
+
+    chain = new Chain();
+    scene.add( chain );
+
+    window.addEventListener( "resize", function() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    } );
+
+    document.addEventListener( "mousedown", mousedown );
+    window.addEventListener( "keydown", keydown );
+}
+
+
+var mode = 0;
+var ichain = 10;
+var points = [];
+var origin;
+var params = [];
+
+
+init();
+
+infotop.innerHTML = "Use the mouse to draw a flat chain and press SPACE when you're done. Please make it nonacute !";
+
+scene.add( new THREE.AxisHelper(100) );
+
+
+animate();
+
+function animate() {
+
+    requestAnimationFrame( animate );
+
+    if ( mode > 0 ) {
+        controls.update();
+    }
+
+    renderer.render( scene, camera );
+};
+
+function ismonotone( p, dir ) {
+
+    for ( var i = 1 ; i < p.length ; i++ ) {
+
+        var e = new THREE.Vector3().subVectors( p[i], p[i-1] );
+
+        if ( e.dot( dir ) < -0.1 ) return false;
+    }
+
+    return true;
+}
+
+function keydown( event ) {
+
+    if ( event.keyCode == 32 ) {
+
+        if ( mode == 0 ) {
+
+            mode = 1;
+
+            document.removeEventListener( "mousedown", mousedown );
+            controls = new THREE.TrackballControls( camera );
+
+            origin = points[0];
+            params = points2params( points );
+
+            points = params2points( params, origin );
+            chain.update( points );
+
+            ichain = params.length - 1;
+
+            infotop.innerHTML = "Press SPACE to go to the next step in the canonicalization algorithm.";
+        }
+        else if (mode == 1 ) {
+
+            params[ichain][2] = 90;
+            points = params2points( params, origin );
+
+            if ( points[ichain+1].z < 0 ) {
+                params[ichain][2] = 270;
+                points = params2points( params, origin );
+            }
+
+            chain.update( points );
+
+            mode = 2;
+
+            if ( ichain == 0 ) {
+                infotop.innerHTML = "Canonicalization done... Hope it worked.";
+                mode = 3;
+            }
+        }
+        else if ( mode == 2 ) {
+
+            if ( ichain+1 < params.length ) {
+
+                var dir = new THREE.Vector3().subVectors( points[ichain], points[ichain-1] );
+                params[ichain+1][2] = 0;
+                points = params2points( params, origin );
+
+                if ( ! ismonotone( points.slice(ichain), dir ) ) {
+                    params[ichain+1][2] = 180;
+                    points = params2points( params, origin );
+                }
+            }
+
+            chain.update( points );
+
+            mode = 1;
+            ichain--;
+        }
+    }
+}
+
+function mousedown( event ) {
+
+    var x =  2 * ( event.clientX / window.innerWidth ) - 1;
+    var y = -2 * ( event.clientY / window.innerHeight ) + 1;
+
+    var vector = new THREE.Vector3( camera.position.z*x, camera.position.z*y, -1 );
+    var projector = new THREE.Projector();
+    projector.unprojectVector( vector, camera );
+    vector.z = 0;
+
+    points.push( vector );
+    chain.update( points );
+}
+
+    </script>
+</body>
+</html>

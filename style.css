@@ -1,0 +1,63 @@
+@font-face {
+    font-family: LMRoman;
+    src: url('lmroman10-regular.otf');
+}
+
+body {
+    font-family: LMRoman, serif;
+    background: #eeeeee;
+    margin: 0;
+    padding: 0.2em 0;
+}
+
+#wrapper {
+    margin: 1em 10%;
+    padding: 0.5em 4em 2em 4em;
+    background: #ffffff;
+    box-shadow: 5px 5px 5px #888888;
+}
+
+.back {
+    text-align: center;
+    font-size: smaller;
+    font-weight: bold;
+}
+
+#prev {
+    position: fixed;
+    top: 50%;
+    left: 0.5em;
+    font-size: xx-large;
+    font-weight: bold;
+}
+
+#next {
+    position: fixed;
+    top: 50%;
+    right: 0.5em;
+    font-size: xx-large;
+    font-weight: bold;
+}
+
+
+#subtitle {
+    font-style: italic;
+    text-align: center;
+}
+
+a {
+    text-decoration: none;
+}
+
+h1 {
+    text-align: center;
+}
+
+img {
+    display: block;
+    margin: auto;
+}
+
+hr {
+    width: 50%;
+}

@@ -1,0 +1,237 @@
+<!DOCTYPE HTML><html><head><meta charset="UTF-8"><meta name="author" content="Olivier BOES"><title>Short Three.js Tutorial</title><link rel="stylesheet" type="text/css" href="./style.css"><script src="./shCore.js"></script><script src="./shBrushJScript.js"></script><link href="./shCore.css" rel="stylesheet" type="text/css"><link href="./shThemeDefault.css" rel="stylesheet" type="text/css"><script> SyntaxHighlighter.all(); </script><script src="MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script></head><body>
+<div class="back">&ndash; <a href="./index.html">back to contents</a> &ndash;</div>
+<div id="next"><a href="./page2.html">&rarr;</a></div>
+<div id="wrapper">
+<h1>1. Short Three.js Tutorial</h1>
+
+<p id="subtitle">&mdash; for the impatient : <a href="./app1.html">a rotating cube</a> &mdash;</p>
+
+<p>
+We would like to make simple 3D applications that can be executed in a browser.
+The preferred way to do this in 2013 (that is, without resorting to things such as Flash or Java applets) is to
+use <a href="http://en.wikipedia.org/wiki/JavaScript">JavaScript</a> and <a href="http://en.wikipedia.org/wiki/WebGL">WebGL</a>.
+The latter being a somewhat low-level API, we will use one of the <a href="http://www.khronos.org/webgl/wiki/User_Contributions#Frameworks">many</a>
+WebGL frameworks available so we don't waste our time on trivialities.
+There doesn't seem to be a preferred JavaScript 3D library yet, so the choice of a particular one is difficult
+(StackOverflow has <a href="http://stackoverflow.com/questions/tagged/webgl+frameworks?sort=votes">plenty of questions</a>
+about the choice of a WebGL framework).
+Here are a few that seem popular at the time of writing :
+</p>
+
+<ul>
+    <li>
+        <a href="http://www.processingjs.org/">Processing.js</a>
+        is very simple, often used for pedagogical purposes, and the one recommended by my professor.
+        However, its focus is on 2D, and even though it can do 3D as well it is a bit limited
+        compared to other 3D libraries.
+    </li>
+    <li>
+        <a href="http://www.scenejs.org/">Scene.js</a>
+        is interesting because it was made for visualizations in engineering and medical fields.
+        The website even says it is specialized towards fast rendering of large numbers of individually articulated objects,
+        which is exactly the kind of things we want to do here.
+        Unfortunately I found this particular library to be a bit difficult to use for a newcomer like me.
+    </li>
+    <li>
+        <a href="http://www.threejs.org/">Three.js</a>
+        is the one I have chosen to use for this project.
+        It seems to be mostly used for video games and computer art, things that are maybe a bit less serious
+        than a Computational Geometry course, but it benefits from an active community, and it is especially
+        designed "for dummies", according to its website.
+        So it is easy to use if like me you aren't very comfortable with 3D graphics programming, yet
+        it is still powerful enough for our needs.
+    </li>
+</ul>
+
+<p>
+So what will follow is a brief tutorial on how to use Three.js to make small 3D applications.
+This tutorial is meant to cover only the very basics, just enough to do interesting things later.
+</p>
+
+<p>
+The first thing we have to do is to download the
+<a href="https://raw.github.com/mrdoob/three.js/master/build/three.js">Three.js file</a> and link it
+as an external JavaScript file in our HTML code the usual way. We do the same for the
+<a href="https://raw.github.com/mrdoob/three.js/master/examples/js/controls/TrackballControls.js">TrackballControls.js file</a>,
+which will provide a simple way to navigate around the 3D scene using the mouse (so we don't have to implement this part ourselves).
+Our HTML file should look something like this :
+</p>
+
+<pre class="brush: js; toolbar: false;">
+&lt;html&gt;
+    &lt;body&gt;
+        &lt;script src="./path/to/Three.js"&gt;&lt;/script&gt;
+        &lt;script src="./path/to/TrackballControls.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+
+            // JavaScript code, coming soon
+
+        &lt;/script&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+<p>
+That is all we need as long as HTML is concerned. Coming now is some example JavaScript code for
+a minimal toy application. The code is heavily commented in order to be self-explanatory.
+</p>
+
+<pre class="brush: js; toolbar: false;">
+// create a new application
+var renderer = new THREE.WebGLRenderer();
+
+// we want it fullscreen
+renderer.setSize( window.innerWidth, window.innerHeight );
+
+// put the application at the end of the &lt;body&gt; element
+document.body.appendChild( renderer.domElement );
+
+// create the camera
+var camera = new THREE.PerspectiveCamera(
+    45,                                     // field of view
+    window.innerWidth / window.innerHeight, // aspect ratio
+    0.01,                                   // near plane
+    1000                                    // far plane
+);
+
+// the camera by default is at (0,0,0),
+// so we put it a bit further away from the origin
+camera.position.set( 0, 0, 10 );
+
+// mouse controls (needs TrackballControls.js)
+var controls = new THREE.TrackballControls( camera );
+
+// create the scene containing the models to be displayed
+var scene = new THREE.Scene();
+
+// create a cube and add it to the scene
+var cube = new THREE.Mesh(
+    new THREE.CubeGeometry( 1, 1, 1 ),
+    new THREE.MeshBasicMaterial( { wireframe: true } )
+);
+scene.add( cube );
+
+// create an axis helper and add it to the scene
+scene.add( new THREE.AxisHelper() );
+
+// main loop
+function animate() {
+
+    // the function must be called every frame
+    requestAnimationFrame( animate );
+
+    // update the controls
+    controls.update();
+
+    // rotate the cube a little bit
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+
+    // render the scene
+    renderer.render( scene, camera );
+};
+
+// launch the animation
+animate();
+</pre>
+
+<p>
+That is all ! What this code does is displaying a rotating  wire-frame model of a 3D cube,
+along with an axis helper (red-green-blue segments for the x-y-z axis), and it is possible
+to navigate around this scene using the mouse (left-click to rotate, right-click to pan,
+and wheel to zoom).
+Check <a href="./app1.html">app1.html</a> to see it in action.
+</p>
+
+<p>
+A few more things to know for using Three.js :
+</p>
+
+<ul>
+    <li>
+        Most of the time, a Three.js animation works like this :
+        <ul>
+            <li>
+                The renderer, camera, scene, lights, and so on are set up.
+            </li>
+            <li>
+                3D models are created (or loaded from a file) and added to the scene.
+            </li>
+            <li>
+                A function, usually called <code>animate</code>, is in charge of what needs to be done at every frame,
+                e.g. rendering the objects on the canvas, or maybe updating the orientation or position of some object
+                if we want it to be rotating or moving (like the cube in our example).
+            </li>
+            <li>
+                <a href="https://developer.mozilla.org/en-US/docs/DOM/event">DOM event listeners</a>
+                are set up to manage user inputs,
+                e.g. a <a href="https://developer.mozilla.org/en-US/docs/DOM/Mozilla_Event_Reference/click">mouse click</a>
+                could change the position of an object, or trigger the creation of a new object to be added to the scene.
+            </li>
+        </ul>
+        In particular, this means that Three.js does not provide any API to handle user inputs. Three.js is a 3D library
+        and nothing else, so it is necessary to learn the basics of DOM events handling in order to do interactive applications.
+    </li>
+    <li>
+        With Three.js comes a class for handling <a href="http://threejs.org/docs/58/#Reference/Math/Vector3">3D vectors</a>
+        along with the expected features (addition, scalar multiplication, dot/cross product, rotation matrices,...).
+        We will try to take advantage of these features instead of diving into basic trigonometry every time we
+        need to rotate something.
+    </li>
+    <li>
+        Maybe the most important class provided by Three.js is <code><a href="http://threejs.org/docs/58/#Reference/Core/Object3D">THREE.Object3D</a></code>,
+        the base class for most 3D objects.
+        When 3D models are created using constructors like
+        <code><a href="http://threejs.org/docs/58/#Reference/Objects/Mesh">THREE.Mesh</a>(
+        <a href="http://threejs.org/docs/58/#Reference/Core/Geometry">geometry</a>,
+        <a href="http://threejs.org/docs/58/#Reference/Materials/Material">material</a> )</code>
+        or <code><a href="http://threejs.org/docs/58/#Reference/Objects/Line">THREE.Line</a></code>,
+        it is subclasses of <code>THREE.Object3D</code> that are returned.
+        It is also possible of
+        <a href="https://developer.mozilla.org/en-US/docs/JavaScript/Guide/Details_of_the_Object_Model#Subclasses_and_inheritance">subclassing</a>
+        the <code>THREE.Object3D</code> class, or a subclass of it, to make our own 3D objects constructors.
+        A simple example of this can be seen by looking at the code for the
+        <code><a href="https://github.com/mrdoob/three.js/blob/master/src/extras/helpers/AxisHelper.js">THREE.AxisHelper</a></code> constructor.
+    </li>
+    <li>
+        Three interesting properties of <code>THREE.Object3D</code> are :
+        <ul>
+            <li>
+                <code>.position</code> is the 3D vector specifying the position of the object.
+            </li>
+            <li>
+                <code>.rotation</code> is the 3D vector specifying the orientation of the object,
+                in <a href="https://en.wikipedia.org/wiki/Euler_angles">Euler angles</a>.
+            </li>
+            <li>
+                <code>.scale</code> is the 3D vector specifying the x-y-z scaling of the object.
+            </li>
+        </ul>
+        It is strongly encouraged to use these properties whenever possible, and to avoid directly modifying
+        the geometry of an object (which is costly performance-wise).
+    </li>
+    <li>
+        Another useful property of <code>THREE.Object3D</code> is <code>.children</code>, which is an array containing other instances
+        of <code>THREE.Object3D</code>. An object can be added or removed to this array using the <code>.add(object)</code>
+        and <code>.remove(object)</code> methods. This way, an instance of <code>THREE.Object3D</code> can be used
+        as a container for smaller, individually articulated objects, which is what we will do later when implementing a
+        "polygonal chain" class.
+    </li>
+    <li>
+        Three.js being aimed towards video games, it can also handle eye candy such as lights and textures, even though
+        our example didn't make use of this.
+    </li>
+</ul>
+
+<p>
+I think this should be enough for introducing Three.js.
+For more help with using the library, the reader is advised to look at the <a href="https://github.com/mrdoob/three.js/wiki">wiki</a>,
+the <a href="http://threejs.org/docs/">documentation</a>, the many
+<a href="https://github.com/mrdoob/three.js/tree/master/examples">examples on GitHub</a>,
+the <a href="http://stackoverflow.com/questions/tagged/three.js">relevant tag on StackOverflow</a>, and so on.
+Please note that Three.js is still in constant development, so the documentation isn't always up-to-date and features
+can appear or disappear from one version to the next. Because of this, in order to understand better how to use it
+it is often useful to not only rely on docs and tutorials but to also take a look at the Three.js source code.
+</p>
+</div><div class="back">&ndash; <a href="./index.html">back to contents</a> &ndash;</div>
+</body></html>
